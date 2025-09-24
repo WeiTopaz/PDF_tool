@@ -274,8 +274,8 @@
 5) 使用者應自行承擔使用風險；作者不對任何損失、資料毀損或權利糾紛承擔責任。
 
 作者：黃瑋
-版本：v0.5.0
-最後更新：2025/08/26
+版本：v0.6.0
+最後更新：2025/09/20
           </div>
         </div>
       </section>
@@ -283,17 +283,16 @@
     </div>
 
   <!-- Libraries -->
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <!-- pdf.js for 圖片化壓縮 -->
-  <!-- 使用 cdnjs 的 pdf.js（穩定 v2.x） -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"></script>
+  <!-- pdf-lib for PDF 操作：https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js-->
+  <script src="lib/pdf-lib.min.js"></script>
+  <!-- jszip for ZIP 壓縮：https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js-->
+  <script src="lib/jszip.min.js"></script>
+  <!-- pdf.js for 圖片化壓縮-->
+  <!--https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js-->
+  <!--https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js-->
+  <script src="lib/pdf.min.js"></script>
+  <script src="lib/pdf.worker.min.js"></script>
 
-  <!-- <script>
-  // 設定 pdf.js worker 位置（與上方版本一致）
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.js";
-  </script> -->
   <script>
     // ---------- Helpers ----------
     const $ = (sel) => document.querySelector(sel);

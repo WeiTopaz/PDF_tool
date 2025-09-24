@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF 小工具</title>
+  <style>
+    :root{
+      --bg:#0b1020;--panel:#111735;--ink:#e8ecff;--muted:#aeb7e6;--accent:#6ea8fe;--ok:#4ade80;--warn:#fbbf24;--err:#fb7185;
+      --border: #2a356b; --chip:#1a2250;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg);color:var(--ink)}
+    header{padding:20px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#0e1633, #0b1020)}
+    h1{margin:0;font-size:20px;letter-spacing:.3px}
+    .wrap{max-width:1100px;margin:0 auto;padding:20px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:16px; padding:16px; box-shadow:0 8px 30px #0006}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .tab-btn{appearance:none;border:1px solid var(--border);background:var(--chip);color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer}
+    .tab-btn[aria-selected="true"]{outline:2px solid var(--accent);background:#1b2a66}
+    .grid{display:grid;gap:16px}
+    @media(min-width:980px){.grid{grid-template-columns:1.2fr .8fr}}
+    label{display:block;margin:8px 0 6px;color:var(--muted);font-size:13px}
+    input[type="text"], input[type="number"], .ranges, select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#0f1532;color:var(--ink)}
+    .btn{appearance:none;border:1px solid var(--border);background:#1c2757;color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer}
+    .btn.primary{background:#2142a3;border-color:#3252b2}
+    .btn.good{background:#1d5f3a;border-color:#2a7a4e}
+    .btn.warn{background:#7a5b1d;border-color:#9a7625}
+    .btn.ghost{background:transparent}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .drop{border:1px dashed var(--border);border-radius:14px;padding:14px;text-align:center;background:#0e1535}
+    .drop[data-active="true"]{border-color:var(--accent);background:#13215a}
+    .file-list{margin:0;padding:0;list-style:none;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .file-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);background:#0f1637}
+    .file-item:last-child{border-bottom:none}
+    .chips{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{background:#182159;border:1px solid var(--border);padding:4px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
+    .actions{display:flex;gap:6px}
+    .hint{font-size:12px;color:var(--muted)}
+    .log{white-space:pre-wrap;background:#0a0f25;border:1px solid var(--border);padding:10px;border-radius:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#cfe1ff}
+    .footer{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .small{font-size:12px}
+    .kbd{font-family:ui-monospace; background:#0d1430; border:1px solid var(--border); padding:1px 6px; border-radius:6px}
+    .ok{color:var(--ok)}.warn{color:var(--warn)}.err{color:var(--err)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>PDF 小工具</h1>
+      <div class="muted small">所有處理皆在瀏覽器本機端進行，適用最新版 Chrome / Edge。</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="card">
+      <nav class="tabs" role="tablist" aria-label="PDF tools">
+        <button class="tab-btn" role="tab" id="tab-merge" aria-selected="true" aria-controls="panel-merge">合併</button>
+        <button class="tab-btn" role="tab" id="tab-rotate" aria-selected="false" aria-controls="panel-rotate">旋轉</button>
+        <button class="tab-btn" role="tab" id="tab-split" aria-selected="false" aria-controls="panel-split">分割</button>
+        <button class="tab-btn" role="tab" id="tab-raster" aria-selected="false" aria-controls="panel-raster">圖片化壓縮</button>
+        <button class="tab-btn" role="tab" id="tab-struct" aria-selected="false" aria-controls="panel-struct">結構壓縮</button>
+        <button class="tab-btn" role="tab" id="tab-disclaim" aria-selected="false" aria-controls="panel-disclaim">聲明</button>
+      </nav>
+
+      <section id="panel-merge" role="tabpanel" aria-labelledby="tab-merge">
+        <div class="grid">
+          <div>
+            <div class="drop" id="drop-merge">
+              <div>拖放多個 PDF 或 <label for="merge-input" class="btn">選擇檔案</label></div>
+              <input id="merge-input" type="file" accept="application/pdf" multiple hidden />
+              <div class="hint">可用上下箭頭調整順序；檔名將依列表順序合併。</div>
+            </div>
+            <ul id="merge-list" class="file-list" aria-live="polite"></ul>
+            <div class="footer">
+              <button id="merge-clear" class="btn ghost">清空</button>
+              <button id="merge-run" class="btn primary">合併並下載</button>
+              <span class="hint">輸出：<span class="kbd">merged.pdf</span></span>
+            </div>
+          </div>
+          <aside>
+            <div class="chips" style="margin-bottom:8px">
+              <span class="chip">本機端處理</span>
+              <span class="chip">支援大量頁數</span>
+              <span class="chip">可重排順序</span>
+            </div>
+            <div class="log" id="log-merge" aria-live="polite"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="panel-rotate" role="tabpanel" aria-labelledby="tab-rotate" hidden>
+        <div class="grid">
+          <div>
+            <div class="drop" id="drop-rotate">
+              <div>拖放 1 個 PDF 或 <label for="rotate-input" class="btn">選擇檔案</label></div>
+              <input id="rotate-input" type="file" accept="application/pdf" hidden />
+              <div class="hint">僅限單一檔案。</div>
+            </div>
+
+            <label>旋轉角度</label>
+            <div class="row">
+              <select id="rotate-deg">
+                <option value="90">順時針 90°</option>
+                <option value="180">180°</option>
+                <option value="270">逆時針 90°（270°）</option>
+              </select>
+              <span class="hint">頁面將相對目前角度旋轉</span>
+            </div>
+
+            <label>頁碼範圍（預設全部）</label>
+            <input id="rotate-range" type="text" class="ranges" placeholder="例如：1-3,5,7-8；留空＝全部" />
+
+            <div class="footer">
+              <button id="rotate-run" class="btn good" disabled>旋轉並下載</button>
+              <span class="hint">輸出：原檔名加 <span class="kbd">-rotated</span></span>
+            </div>
+          </div>
+          <aside>
+            <div class="chips" style="margin-bottom:8px">
+              <span class="chip">相對旋轉</span>
+              <span class="chip">支援頁碼區段</span>
+            </div>
+            <div class="log" id="log-rotate" aria-live="polite"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="panel-split" role="tabpanel" aria-labelledby="tab-split" hidden>
+        <div class="grid">
+          <div>
+            <div class="drop" id="drop-split">
+              <div>拖放 1 個 PDF 或 <label for="split-input" class="btn">選擇檔案</label></div>
+              <input id="split-input" type="file" accept="application/pdf" hidden />
+              <div class="hint">僅限單一檔案。</div>
+            </div>
+
+            <label>分割頁碼範圍</label>
+            <input id="split-range" type="text" class="ranges" placeholder="例如：1-3,5;8-10；分號(;)分組輸出" />
+
+            <div class="row" style="margin-top:8px">
+              <label class="row" style="gap:6px"><input id="split-each" type="checkbox" /> 每頁一檔（忽略上方範圍）</label>
+              <label class="row" style="gap:6px"><input id="split-zip" type="checkbox" checked /> 以 ZIP 打包下載（建議）</label>
+            </div>
+
+            <div class="footer">
+              <button id="split-run" class="btn primary" disabled>分割並下載</button>
+              <span class="hint">輸出：多檔（建議以 ZIP 下載）</span>
+            </div>
+          </div>
+          <aside>
+            <div class="chips" style="margin-bottom:8px">
+              <span class="chip">頁碼區段分割</span>
+              <span class="chip">可每頁一檔</span>
+              <span class="chip">ZIP 批次下載</span>
+            </div>
+            <div class="log" id="log-split" aria-live="polite"></div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 圖片化壓縮（方案A） -->
+      <section id="panel-raster" role="tabpanel" aria-labelledby="tab-raster" hidden>
+        <div class="grid">
+          <div>
+            <div class="drop" id="drop-raster">
+              <div>拖放 1 個 PDF 或 <label for="raster-input" class="btn">選擇檔案</label></div>
+              <input id="raster-input" type="file" accept="application/pdf" hidden />
+              <div class="hint">將每頁轉成 JPEG 圖片後重建 PDF；會失去可選文字/連結/表單。</div>
+            </div>
+
+            <div class="row" style="margin-top:8px">
+              <div style="flex:1">
+                <label>頁碼範圍（留空＝全部）</label>
+                <input id="raster-range" type="text" class="ranges" placeholder="例如：1-3,5,7-8" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:8px">
+              <div class="row" style="gap:8px">
+                <label>DPI</label>
+                <!-- 改為數字輸入，可自由輸入 DPI；同時提供 datalist 常用選項 -->
+                <input id="raster-dpi" type="number" min="36" max="600" step="1" value="120" list="raster-dpi-list" />
+              </div>
+              <div class="row" style="gap:8px">
+                <label>JPEG 品質</label>
+                <input id="raster-quality" type="number" step="0.05" min="0.3" max="1" value="0.65" style="width:110px" />
+              </div>
+              <label class="row" style="gap:6px"><input id="raster-gray" type="checkbox" /> 轉灰階</label>
+            </div>
+
+            <div class="footer">
+              <button id="raster-run" class="btn primary" disabled>壓縮並下載</button>
+              <span class="hint">輸出：<span class="kbd">原檔名-p_raster_dpi###_q##.pdf</span></span>
+            </div>
+          </div>
+          <aside>
+            <div class="chips" style="margin-bottom:8px">
+              <span class="chip">本機端</span>
+              <span class="chip">適合掃描/影像多</span>
+              <span class="chip">可調 DPI/品質</span>
+            </div>
+            <div class="log" id="log-raster" aria-live="polite"></div>
+            <div class="hint" style="margin-top:8px">
+              <strong>壓縮說明：</strong> 透過 pdf.js 把頁面渲染成圖片，再用 pdf-lib 重建。對掃描檔、圖片多的檔案壓縮明顯。
+              風險：失去可選文字、表單、連結、書籤與可存取性資訊。<br/>
+              <br/>
+              <strong>建議設定：</strong><br/>
+              一般文件：DPI 120、品質 0.65；<br/>
+              圖片較多：DPI 144–200、品質 0.7–0.8；<br/>
+              只求可看：DPI 96–120、品質 0.5–0.65、可開灰階。<br/>
+              <br/>
+              <strong>常見DPI：</strong><br/>
+              72、96、120(普通)<br/>
+              144、200(清晰)<br/>
+              300(超清晰)<br/>
+              600(你看得出差異！？)
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 結構壓縮（方案B） -->
+      <section id="panel-struct" role="tabpanel" aria-labelledby="tab-struct" hidden>
+        <div class="grid">
+          <div>
+            <div class="drop" id="drop-struct">
+              <div>拖放 1 個 PDF 或 <label for="struct-input" class="btn">選擇檔案</label></div>
+              <input id="struct-input" type="file" accept="application/pdf" hidden />
+              <div class="hint">保持文字/向量結構，重新儲存與重建頁面以清理冗餘。</div>
+            </div>
+
+            <div class="row" style="margin-top:8px">
+              <label class="row" style="gap:6px"><input id="struct-rebuild" type="checkbox" checked /> 重建頁面（複製每頁到新檔）</label>
+              <label class="row" style="gap:6px"><input id="struct-stripmeta" type="checkbox" checked /> 清空 Metadata（標題/作者/關鍵字/時間）</label>
+            </div>
+
+            <div class="footer">
+              <button id="struct-run" class="btn good" disabled>壓縮並下載</button>
+              <span class="hint">輸出：<span class="kbd">原檔名-p_struct.pdf</span></span>
+            </div>
+          </div>
+          <aside>
+            <div class="chips" style="margin-bottom:8px">
+              <span class="chip">保留文字/向量</span>
+              <span class="chip">不改畫質</span>
+              <span class="chip">減幅有限</span>
+            </div>
+            <div class="log" id="log-struct" aria-live="polite"></div>
+            <div class="hint" style="margin-top:8px">
+              <strong>壓縮說明：</strong> 透過重新儲存或重建頁面，去除增量修訂、未引用物件、冗餘 Metadata 等。
+              <br/>
+              <strong>效果：</strong> 一般 5–15%，若原檔含多次增量/附件，可能更多。畫質不變。
+              <br/>
+              <strong>風險：</strong> 特殊互動元素（表單、註解、附件）可能在重建頁面時被捨棄；建議先備份。
+              <br/>
+              <strong>建議設定：</strong> 預設勾選「重建頁面」與「清空 Metadata」。若需保留註解/表單，取消「重建頁面」。
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 聲明 -->
+      <section id="panel-disclaim" role="tabpanel" aria-labelledby="tab-disclaim" hidden>
+        <div class="grid">
+          <div class="log" aria-live="polite">
+【使用聲明】
+1) 本工具僅供學習與娛樂用途，不保證壓縮後檔案之完整性與適用性。
+2) 任何檔案處理皆在你的瀏覽器本機端進行；請自行確保原檔備份與權限合規。
+3) 圖片化壓縮將移除可選文字、表單、連結、書籤與可存取性資訊，請審慎使用。
+4) 由於 PDF 規格與來源多樣，本工具對特殊內容（加密、DRM、複雜註解、3D、影音）可能無法正確處理。
+5) 使用者應自行承擔使用風險；作者不對任何損失、資料毀損或權利糾紛承擔責任。
+
+作者：黃瑋
+版本：v0.6.0
+最後更新：2025/09/20
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  <!-- Libraries -->
+  <!-- pdf-lib for PDF 操作：https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js-->
+  <script src="lib/pdf-lib.min.js"></script>
+  <!-- jszip for ZIP 壓縮：https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js-->
+  <script src="lib/jszip.min.js"></script>
+  <!-- pdf.js for 圖片化壓縮-->
+  <!--https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js-->
+  <!--https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js-->
+  <script src="lib/pdf.min.js"></script>
+  <script src="lib/pdf.worker.min.js"></script>
+
+  <script>
+    // ---------- Helpers ----------
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+    const { PDFDocument, degrees } = window.PDFLib;
+
+    function log(el, msg, type){
+      const tag = type==='ok'? '✅ ' : type==='warn'? '⚠️ ' : type==='err'? '❌ ' : '• ';
+      el.textContent = (el.textContent? el.textContent + "\n" : "") + tag + msg;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function clearLog(el){ el.textContent = ''; }
+
+    function readAsArrayBuffer(file){
+      return new Promise((resolve, reject)=>{
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = reject;
+        fr.readAsArrayBuffer(file);
+      });
+    }
+
+    function downloadBlob(blob, filename){
+      const a = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+    }
+
+    function baseName(name){
+      const i = name.lastIndexOf('.');
+      return i>0 ? name.slice(0,i) : name;
+    }
+
+    function parseRanges(input, total){
+      // input like "1-3,5,7-8"; return zero-based unique sorted indices
+      if(!input || !input.trim()){
+        return Array.from({length: total}, (_,i)=>i);
+      }
+      const set = new Set();
+      const parts = input.split(',').map(s=>s.trim()).filter(Boolean);
+      for(const p of parts){
+        if(/^-?\d+$/.test(p)){
+          const n = Math.max(1, Math.min(total, parseInt(p,10)));
+          set.add(n-1);
+        } else {
+          const m = p.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+          if(m){
+            let s = parseInt(m[1],10), e = parseInt(m[2],10);
+            if(s>e) [s,e] = [e,s];
+            s = Math.max(1, s); e = Math.min(total, e);
+            for(let i=s;i<=e;i++) set.add(i-1);
+          }
+        }
+      }
+      return Array.from(set).sort((a,b)=>a-b);
+    }
+
+    // ---------- Tabs ----------
+    const tabs = [
+      {btn: $('#tab-merge'), panel: $('#panel-merge')},
+      {btn: $('#tab-rotate'), panel: $('#panel-rotate')},
+      {btn: $('#tab-split'), panel: $('#panel-split')},
+      {btn: $('#tab-raster'), panel: $('#panel-raster')},
+      {btn: $('#tab-struct'), panel: $('#panel-struct')},
+      {btn: $('#tab-disclaim'), panel: $('#panel-disclaim')},
+    ];
+    tabs.forEach(({btn, panel})=>{
+      btn.addEventListener('click', ()=>{
+        tabs.forEach(({btn:b, panel:p})=>{ b.setAttribute('aria-selected', String(b===btn)); p.hidden = p!==panel; });
+      });
+    });
+
+    // ---------- MERGE ----------
+    const mergeInput = $('#merge-input');
+    const mergeList = $('#merge-list');
+    const mergeLog = $('#log-merge');
+    const mergeState = []; // {file}
+
+    function renderMergeList(){
+      mergeList.innerHTML = '';
+      mergeState.forEach((item, idx)=>{
+        const li = document.createElement('li'); li.className='file-item';
+        const left = document.createElement('div');
+        left.innerHTML = `<strong>${item.file.name}</strong> <span class="muted small">(${(item.file.size/1024/1024).toFixed(2)} MB)</span>`;
+        const right = document.createElement('div'); right.className='actions';
+        const up = Object.assign(document.createElement('button'), {className:'btn small', title:'上移', innerHTML:'↑'});
+        const down = Object.assign(document.createElement('button'), {className:'btn small', title:'下移', innerHTML:'↓'});
+        const del = Object.assign(document.createElement('button'), {className:'btn small', title:'移除', innerHTML:'移除'});
+        up.onclick = ()=>{ if(idx>0){ const t = mergeState[idx-1]; mergeState[idx-1]=mergeState[idx]; mergeState[idx]=t; renderMergeList(); } };
+        down.onclick = ()=>{ if(idx<mergeState.length-1){ const t = mergeState[idx+1]; mergeState[idx+1]=mergeState[idx]; mergeState[idx]=t; renderMergeList(); } };
+        del.onclick = ()=>{ mergeState.splice(idx,1); renderMergeList(); };
+        right.append(up,down,del); li.append(left,right); mergeList.append(li);
+      });
+    }
+
+    mergeInput.addEventListener('change', (e)=>{
+      clearLog(mergeLog);
+      const files = Array.from(e.target.files || []);
+      files.forEach(f=> mergeState.push({file:f}));
+      renderMergeList();
+      if(files.length) log(mergeLog, `已加入 ${files.length} 個檔案。`,'ok');
+      mergeInput.value='';
+    });
+
+    $('#merge-clear').addEventListener('click', ()=>{ mergeState.splice(0,mergeState.length); renderMergeList(); clearLog(mergeLog); });
+
+    async function doMerge(){
+      clearLog(mergeLog);
+      if(mergeState.length<2){ log(mergeLog,'至少需 2 個 PDF 才能合併','warn'); return; }
+      try{
+        const out = await PDFDocument.create();
+        let totalPages = 0;
+        for(let i=0;i<mergeState.length;i++){
+          const f = mergeState[i].file;
+          log(mergeLog, `讀取：${f.name}`);
+          const bytes = await readAsArrayBuffer(f);
+          const src = await PDFDocument.load(bytes);
+          const pages = await out.copyPages(src, src.getPageIndices());
+          pages.forEach(p=> out.addPage(p));
+          totalPages += pages.length;
+          log(mergeLog, `→ 已加入 ${pages.length} 頁`,'ok');
+        }
+        const outBytes = await out.save({ addDefaultPage: false });
+        downloadBlob(new Blob([outBytes], {type:'application/pdf'}), 'merged.pdf');
+        log(mergeLog, `完成！共 ${totalPages} 頁。`,'ok');
+      }catch(err){
+        console.error(err); log(mergeLog, '合併失敗：'+ err.message, 'err');
+      }
+    }
+    $('#merge-run').addEventListener('click', doMerge);
+
+    // Drag & drop for merge
+    const dropMerge = $('#drop-merge');
+    ;['dragenter','dragover'].forEach(ev=> dropMerge.addEventListener(ev, e=>{ e.preventDefault(); dropMerge.dataset.active = 'true'; }));
+    ;['dragleave','drop'].forEach(ev=> dropMerge.addEventListener(ev, e=>{ e.preventDefault(); if(ev==='drop'){ const files = Array.from(e.dataTransfer.files||[]).filter(f=>f.type==='application/pdf'); if(files.length){ files.forEach(f=> mergeState.push({file:f})); renderMergeList(); log(mergeLog, `已加入 ${files.length} 個檔案。`,'ok'); } } dropMerge.dataset.active='false'; }));
+
+    // ---------- ROTATE ----------
+    const rotateInput = $('#rotate-input');
+    const rotateLog = $('#log-rotate');
+    let rotateFile = null;
+
+    function setRotateReady(ok){ $('#rotate-run').disabled = !ok; }
+
+    rotateInput.addEventListener('change', (e)=>{
+      clearLog(rotateLog);
+      const f = (e.target.files||[])[0];
+      if(f){ rotateFile = f; setRotateReady(true); log(rotateLog, `已選擇：${f.name}（${(f.size/1024/1024).toFixed(2)} MB）`, 'ok'); }
+      rotateInput.value='';
+    });
+
+    async function doRotate(){
+      clearLog(rotateLog);
+      if(!rotateFile){ log(rotateLog,'請先選擇 PDF','warn'); return; }
+      const deg = parseInt($('#rotate-deg').value,10) % 360;
+      try{
+        const bytes = await readAsArrayBuffer(rotateFile);
+        const doc = await PDFDocument.load(bytes);
+        const total = doc.getPageCount();
+        const rangeStr = $('#rotate-range').value.trim();
+        const targets = parseRanges(rangeStr, total);
+        log(rotateLog, `總頁數 ${total}，將旋轉 ${targets.length} 頁。`);
+        for(const i of targets){
+          const page = doc.getPage(i);
+          const cur = page.getRotation().angle || 0;
+          page.setRotation(degrees((cur + deg) % 360));
+        }
+        const outBytes = await doc.save();
+        const outName = baseName(rotateFile.name) + '-rotated.pdf';
+        downloadBlob(new Blob([outBytes], {type:'application/pdf'}), outName);
+        log(rotateLog,'完成！','ok');
+      }catch(err){ console.error(err); log(rotateLog, '旋轉失敗：'+err.message,'err'); }
+    }
+    $('#rotate-run').addEventListener('click', doRotate);
+
+    const dropRotate = $('#drop-rotate');
+    ;['dragenter','dragover'].forEach(ev=> dropRotate.addEventListener(ev, e=>{ e.preventDefault(); dropRotate.dataset.active='true'; }));
+    ;['dragleave','drop'].forEach(ev=> dropRotate.addEventListener(ev, e=>{ e.preventDefault(); if(ev==='drop'){ const f = (Array.from(e.dataTransfer.files||[]).filter(f=>f.type==='application/pdf'))[0]; if(f){ rotateFile=f; setRotateReady(true); log(rotateLog, `已選擇：${f.name}（${(f.size/1024/1024).toFixed(2)} MB）`, 'ok'); } } dropRotate.dataset.active='false'; }));
+
+    // ---------- SPLIT ----------
+    const splitInput = $('#split-input');
+    const splitLog = $('#log-split');
+    let splitFile = null;
+
+    function setSplitReady(ok){ $('#split-run').disabled = !ok; }
+
+    splitInput.addEventListener('change', (e)=>{
+      clearLog(splitLog);
+      const f = (e.target.files||[])[0];
+      if(f){ splitFile = f; setSplitReady(true); log(splitLog, `已選擇：${f.name}（${(f.size/1024/1024).toFixed(2)} MB）`, 'ok'); }
+      splitInput.value='';
+    });
+
+    // 解析：分號(;) 分組、逗號(,) 分片段；片段可為單頁或區間 a-b（允許 b<a）。
+    // 回傳：[{ indices:number[], label:string }, ...]
+    function parseSemicolonGroups(input, total){
+      const groups = [];
+      if(!input || !input.trim()) return groups;
+      const rawGroups = input.split(';').map(s=>s.trim()).filter(Boolean);
+      for(const gstr of rawGroups){
+        const cleaned = gstr.replaceAll(' ', '').split('–').join('-'); // 去空白、將 en dash 視為 -
+        const parts = cleaned.split(',').filter(Boolean);
+        const seen = new Set();
+        const indices = [];
+        const labelParts = [];
+        for(const part of parts){
+          if(part.includes('-')){
+            const seg = part.split('-');
+            if(seg.length===2){
+              let a = parseInt(seg[0],10), b = parseInt(seg[1],10);
+              if(!Number.isFinite(a) || !Number.isFinite(b)) continue;
+              let s = Math.min(a,b), e = Math.max(a,b);
+              s = Math.max(1, s); e = Math.min(total, e);
+              for(let p=s; p<=e; p++){
+                const idx = p-1; if(!seen.has(idx)){ seen.add(idx); indices.push(idx); }
+              }
+              labelParts.push(`${s}-${e}`);
+            }
+          } else {
+            let n = parseInt(part,10);
+            if(!Number.isFinite(n)) continue;
+            n = Math.max(1, Math.min(total, n));
+            const idx = n-1; if(!seen.has(idx)){ seen.add(idx); indices.push(idx); }
+            labelParts.push(String(n));
+          }
+        }
+        if(indices.length){ groups.push({ indices, label: labelParts.join('_') }); }
+      }
+      return groups;
+    }
+
+    async function doSplit(){
+      clearLog(splitLog);
+      if(!splitFile){ log(splitLog,'請先選擇 PDF','warn'); return; }
+      try{
+        const bytes = await readAsArrayBuffer(splitFile);
+        const src = await PDFDocument.load(bytes);
+        const total = src.getPageCount();
+        const each = $('#split-each').checked;
+        const zipOut = $('#split-zip').checked;
+
+        let groups = [];
+        if(each){
+          groups = Array.from({length: total}, (_,i)=>({ indices:[i], label: String(i+1) }));
+          log(splitLog, `每頁一檔：共 ${total} 檔`);
+        } else {
+          const raw = $('#split-range').value.trim();
+          const parsed = parseSemicolonGroups(raw, total);
+          if(parsed.length===0){ log(splitLog,'請輸入有效的頁碼（以分號 ; 分組、逗號 , 分片段）或勾選「每頁一檔」','warn'); return; }
+          groups = parsed;
+          log(splitLog, `分組數：${groups.length}`);
+        }
+
+        const base = baseName(splitFile.name);
+        const files = [];
+        for(let gi=0; gi<groups.length; gi++){
+          const { indices, label } = groups[gi];
+          const doc = await PDFDocument.create();
+          const pages = await doc.copyPages(src, indices);
+          pages.forEach(p=> doc.addPage(p));
+          const out = await doc.save();
+          const name = `${base}-p_${label}.pdf`;
+          files.push({name, blob:new Blob([out],{type:'application/pdf'})});
+          log(splitLog, `完成：${name}`,'ok');
+        }
+
+        if(zipOut && files.length>1){
+          const zip = new JSZip();
+          files.forEach(f=> zip.file(f.name, f.blob));
+          const zipped = await zip.generateAsync({type:'blob'});
+          downloadBlob(zipped, `${base}-split.zip`);
+          log(splitLog, `已下載：${base}-split.zip`,'ok');
+        } else {
+          files.forEach(f=> downloadBlob(f.blob, f.name));
+          log(splitLog, `已下載 ${files.length} 檔。`,'ok');
+        }
+      }catch(err){ console.error(err); log(splitLog,'分割失敗：'+err.message,'err'); }
+    }
+    $('#split-run').addEventListener('click', doSplit);
+
+    const dropSplit = $('#drop-split');
+    ;['dragenter','dragover'].forEach(ev=> dropSplit.addEventListener(ev, e=>{ e.preventDefault(); dropSplit.dataset.active='true'; }));
+    ;['dragleave','drop'].forEach(ev=> dropSplit.addEventListener(ev, e=>{ e.preventDefault(); if(ev==='drop'){ const f=(Array.from(e.dataTransfer.files||[]).filter(f=>f.type==='application/pdf'))[0]; if(f){ splitFile=f; setSplitReady(true); log(splitLog, `已選擇：${f.name}（${(f.size/1024/1024).toFixed(2)} MB）`, 'ok'); } } dropSplit.dataset.active='false'; }));
+
+  // =============================
+    // 圖片化壓縮（方案A）
+    // =============================
+    const rasterInput = $('#raster-input');
+    const rasterLog   = $('#log-raster');
+    let rasterFile = null;
+
+    function setRasterReady(ok){ $('#raster-run').disabled = !ok; }
+
+    rasterInput.addEventListener('change', (e)=>{
+      clearLog(rasterLog);
+      const f = (e.target.files||[])[0];
+      if(f){ rasterFile = f; setRasterReady(true); log(rasterLog, `已選擇：${f.name}（${(f.size/1024/1024).toFixed(2)} MB）`, 'ok'); }
+      rasterInput.value='';
+    });
+
+    const dropRaster = $('#drop-raster');
+    ;['dragenter','dragover'].forEach(ev=> dropRaster.addEventListener(ev, e=>{ e.preventDefault(); dropRaster.dataset.active='true'; }));
+    ;['dragleave','drop'].forEach(ev=> dropRaster.addEventListener(ev, e=>{ e.preventDefault(); if(ev==='drop'){ const f=(Array.from(e.dataTransfer.files||[]).filter(f=>f.type==='application/pdf'))[0]; if(f){ rasterFile=f; setRasterReady(true); log(rasterLog, `已選擇：${f.name}（${(f.size/1024/1024).toFixed(2)} MB）`, 'ok'); } } dropRaster.dataset.active='false'; }));
+
+    async function compressPdfWithRasterize(file, { dpi=120, quality=0.65, grayscale=false, range='' }={}){
+      const buf = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data: buf });
+      const pdf = await loadingTask.promise;
+      const out = await PDFDocument.create();
+      const total = pdf.numPages;
+      const targets = parseRanges(range, total); // 0-based
+
+      for(const i of targets){
+        const page = await pdf.getPage(i+1);
+        const vp1 = page.getViewport({ scale: 1.0 });
+        const widthPt = vp1.width; const heightPt = vp1.height; // 72dpi 等效 point 尺寸
+        const scale = dpi / 72; // 渲染比例
+        const viewport = page.getViewport({ scale });
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height= Math.ceil(viewport.height);
+        if(grayscale) ctx.filter = 'grayscale(1)';
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        const blob = await new Promise(res=> canvas.toBlob(res, 'image/jpeg', quality));
+        const bytes = await blob.arrayBuffer();
+        const jpg = await out.embedJpg(bytes);
+        const p = out.addPage([widthPt, heightPt]);
+        p.drawImage(jpg, {x:0, y:0, width:widthPt, height:heightPt});
+        // 釋放
+        canvas.width = canvas.height = 0;
+      }
+      const outBytes = await out.save({ addDefaultPage:false });
+      return new Blob([outBytes], {type:'application/pdf'});
+    }
+
+    async function doRaster(){
+      clearLog(rasterLog);
+      if(!rasterFile){ log(rasterLog,'請先選擇 PDF','warn'); return; }
+      // 允許使用者輸入任意 DPI，但限制在合理範圍（36–600），若無效則使用預設 120
+      const rawDpi = parseInt($('#raster-dpi').value, 10);
+      const dpi = Number.isFinite(rawDpi) ? Math.max(36, Math.min(600, rawDpi)) : 120;
+      
+      let quality = parseFloat($('#raster-quality').value);
+      if(!Number.isFinite(quality)) quality = 0.65;
+      quality = Math.max(0.3, Math.min(1, quality));
+      const grayscale = $('#raster-gray').checked;
+      const range = $('#raster-range').value.trim();
+      try{
+        log(rasterLog, `開始壓縮：DPI=${dpi}, 品質=${quality}`);
+        const outBlob = await compressPdfWithRasterize(rasterFile, {dpi, quality, grayscale, range});
+        const base = baseName(rasterFile.name);
+        const name = `${base}-p_raster_dpi${dpi}_q${Math.round(quality*100)}.pdf`;
+        downloadBlob(outBlob, name);
+        log(rasterLog, '完成！','ok');
+      }catch(err){ console.error(err); log(rasterLog,'壓縮失敗：'+err.message,'err'); }
+    }
+    $('#raster-run').addEventListener('click', doRaster);
+
+    // =============================
+    // 結構壓縮（方案B）
+    // =============================
+    const structInput = $('#struct-input');
+    const structLog   = $('#log-struct');
+    let structFile = null;
+    function setStructReady(ok){ $('#struct-run').disabled = !ok; }
+
+    structInput.addEventListener('change', (e)=>{
+      clearLog(structLog);
+      const f = (e.target.files||[])[0];
+      if(f){ structFile = f; setStructReady(true); log(structLog, `已選擇：${f.name}（${(f.size/1024/1024).toFixed(2)} MB）`, 'ok'); }
+      structInput.value='';
+    });
+
+    const dropStruct = $('#drop-struct');
+    ;['dragenter','dragover'].forEach(ev=> dropStruct.addEventListener(ev, e=>{ e.preventDefault(); dropStruct.dataset.active='true'; }));
+    ;['dragleave','drop'].forEach(ev=> dropStruct.addEventListener(ev, e=>{ e.preventDefault(); if(ev==='drop'){ const f=(Array.from(e.dataTransfer.files||[]).filter(f=>f.type==='application/pdf'))[0]; if(f){ structFile=f; setStructReady(true); log(structLog, `已選擇：${f.name}（${(f.size/1024/1024).toFixed(2)} MB）`, 'ok'); } } dropStruct.dataset.active='false'; }));
+
+    async function compressStructural(file, {rebuild=true, stripMeta=true}={}){
+      const bytes = await file.arrayBuffer();
+      if(rebuild){
+        // 建立新 PDF，複製所有頁面（可去除增量修訂/未引用物件）
+        const src = await PDFDocument.load(bytes);
+        const out = await PDFDocument.create();
+        const pages = await out.copyPages(src, src.getPageIndices());
+        pages.forEach(p=> out.addPage(p));
+        // 清空 metadata（可選）
+        if(stripMeta){
+          out.setTitle(''); out.setAuthor(''); out.setSubject(''); out.setKeywords([]);
+          out.setProducer(''); out.setCreator('');
+          try{ out.setCreationDate(); out.setModificationDate(); }catch(_){/* ignore */}
+        }
+        const outBytes = await out.save({ addDefaultPage:false });
+        return new Blob([outBytes], {type:'application/pdf'});
+      } else {
+        // 直接重儲存原檔（減幅很小），可同時清空 metadata
+        const doc = await PDFDocument.load(bytes);
+        if(stripMeta){
+          doc.setTitle(''); doc.setAuthor(''); doc.setSubject(''); doc.setKeywords([]);
+          doc.setProducer(''); doc.setCreator('');
+          try{ doc.setCreationDate(); doc.setModificationDate(); }catch(_){/* ignore */}
+        }
+        const outBytes = await doc.save({ addDefaultPage:false });
+        return new Blob([outBytes], {type:'application/pdf'});
+      }
+    }
+
+    async function doStruct(){
+      clearLog(structLog);
+      if(!structFile){ log(structLog,'請先選擇 PDF','warn'); return; }
+      const rebuild = $('#struct-rebuild').checked;
+      const stripMeta = $('#struct-stripmeta').checked;
+      try{
+        log(structLog, `開始壓縮：${rebuild? '重建頁面' : '直接重儲存'}，清空Metadata=${stripMeta}`);
+        const outBlob = await compressStructural(structFile, {rebuild, stripMeta});
+        const base = baseName(structFile.name);
+        const name = `${base}-p_struct${rebuild? '_rebuild':''}${stripMeta? '_nometa':''}.pdf`;
+        downloadBlob(outBlob, name);
+        log(structLog, '完成！','ok');
+      }catch(err){ console.error(err); log(structLog,'壓縮失敗：'+err.message,'err'); }
+    }
+    $('#struct-run').addEventListener('click', doStruct);
+
+</script>
+</body>
+</html>
