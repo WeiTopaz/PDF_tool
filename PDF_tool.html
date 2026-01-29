@@ -5,45 +5,298 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PDF 小工具</title>
   <style>
-    :root{
-      --bg:#0b1020;--panel:#111735;--ink:#e8ecff;--muted:#aeb7e6;--accent:#6ea8fe;--ok:#4ade80;--warn:#fbbf24;--err:#fb7185;
-      --border: #2a356b; --chip:#1a2250;
+    :root {
+      /* Morandi Palette */
+      --bg: #F2F0EB;           /* 溫潤的米灰背景 */
+      --panel: #FFFFFF;        /* 純白面板 */
+      --ink: #4A4A4A;          /* 深灰文字，不使用純黑 */
+      --muted: #8C8C8C;        /* 中灰次要文字 */
+      --border: #D9D9D9;       /* 清晰的淺灰邊框 */
+      
+      /* Accents */
+      --accent: #7A90A4;       /* 莫蘭迪藍灰 */
+      --accent-hover: #637B91;
+      --accent-light: #EBF0F5;
+      
+      /* Functional Colors (Desaturated) */
+      --ok: #8FA894;           /* 莫蘭迪綠 */
+      --warn: #D1B886;         /* 莫蘭迪黃/金 */
+      --err: #C27D7D;          /* 莫蘭迪紅/乾燥玫瑰 */
+      
+      --chip: #F5F5F4;         /* 標籤背景 */
+      --input-bg: #FAFAFA;     /* 輸入框背景 */
+      --shadow: 0 4px 20px rgba(0,0,0,0.05); /* 柔和陰影 */
     }
-    *{box-sizing:border-box}
-    body{margin:0;font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg);color:var(--ink)}
-    header{padding:20px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#0e1633, #0b1020)}
-    h1{margin:0;font-size:20px;letter-spacing:.3px}
-    .wrap{max-width:1100px;margin:0 auto;padding:20px}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:16px; padding:16px; box-shadow:0 8px 30px #0006}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-    .tab-btn{appearance:none;border:1px solid var(--border);background:var(--chip);color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer}
-    .tab-btn[aria-selected="true"]{outline:2px solid var(--accent);background:#1b2a66}
-    .grid{display:grid;gap:16px}
-    @media(min-width:980px){.grid{grid-template-columns:1.2fr .8fr}}
-    label{display:block;margin:8px 0 6px;color:var(--muted);font-size:13px}
-    input[type="text"], input[type="number"], .ranges, select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#0f1532;color:var(--ink)}
-    .btn{appearance:none;border:1px solid var(--border);background:#1c2757;color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer}
-    .btn.primary{background:#2142a3;border-color:#3252b2}
-    .btn.good{background:#1d5f3a;border-color:#2a7a4e}
-    .btn.warn{background:#7a5b1d;border-color:#9a7625}
-    .btn.ghost{background:transparent}
-    .btn:disabled{opacity:.5;cursor:not-allowed}
-    .muted{color:var(--muted)}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .drop{border:1px dashed var(--border);border-radius:14px;padding:14px;text-align:center;background:#0e1535}
-    .drop[data-active="true"]{border-color:var(--accent);background:#13215a}
-    .file-list{margin:0;padding:0;list-style:none;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-    .file-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);background:#0f1637}
-    .file-item:last-child{border-bottom:none}
-    .chips{display:flex;gap:6px;flex-wrap:wrap}
-    .chip{background:#182159;border:1px solid var(--border);padding:4px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
-    .actions{display:flex;gap:6px}
-    .hint{font-size:12px;color:var(--muted)}
-    .log{white-space:pre-wrap;background:#0a0f25;border:1px solid var(--border);padding:10px;border-radius:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#cfe1ff}
-    .footer{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .small{font-size:12px}
-    .kbd{font-family:ui-monospace; background:#0d1430; border:1px solid var(--border); padding:1px 6px; border-radius:6px}
-    .ok{color:var(--ok)}.warn{color:var(--warn)}.err{color:var(--err)}
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 24px 0;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      margin-bottom: 24px;
+    }
+    
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+      color: #5E6C77; /* 標題帶點藍灰 */
+      letter-spacing: 0.5px;
+    }
+
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .tab-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .tab-btn:hover {
+      background: var(--chip);
+      color: var(--ink);
+    }
+    
+    .tab-btn[aria-selected="true"] {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(122, 144, 164, 0.3);
+    }
+
+    /* Layout */
+    .grid {
+      display: grid;
+      gap: 24px;
+    }
+    @media(min-width: 980px) {
+      .grid { grid-template-columns: 1.4fr 0.6fr; }
+    }
+
+    /* Forms */
+    label {
+      display: block;
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    input[type="text"], input[type="number"], .ranges, select {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--ink);
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(122, 144, 164, 0.15);
+    }
+
+    /* Buttons */
+    .btn {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    
+    .btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: var(--chip);
+      border-color: transparent;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn.primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(99, 123, 145, 0.3);
+    }
+
+    .btn.good { background: var(--ok); border-color: var(--ok); color: #fff; }
+    .btn.good:hover:not(:disabled) { filter: brightness(0.95); color: #fff; }
+    
+    .btn.warn { background: var(--warn); border-color: var(--warn); color: #fff; }
+    .btn.warn:hover:not(:disabled) { filter: brightness(0.95); color: #fff; }
+
+    .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+    .btn.ghost:hover { background: var(--chip); color: var(--ink); border-color: transparent; box-shadow: none; transform: none; }
+    
+    .btn.small { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+
+    /* Drag & Drop */
+    .drop {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 32px 20px;
+      text-align: center;
+      background: var(--input-bg);
+      transition: all 0.2s;
+      color: var(--muted);
+    }
+    .drop[data-active="true"] {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .drop .btn { margin: 0 6px; }
+
+    /* Lists */
+    .file-list {
+      margin: 16px 0;
+      padding: 0;
+      list-style: none;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+      font-size: 14px;
+    }
+    .file-item:last-child { border-bottom: none; }
+    .file-item strong { color: var(--ink); font-weight: 500; }
+
+    /* Helpers & Misc */
+    .muted { color: var(--muted); }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    
+    .hint {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: var(--chip);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      background: var(--chip);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .footer {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .log {
+      white-space: pre-wrap;
+      background: var(--input-bg); /* 改為與輸入框一樣的淺灰 */
+      color: var(--ink);           /* 改為深灰文字 */
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    /* 針對聲明頁特別處理 */
+    #panel-disclaim .log {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--ink);
+    }
+    
+    .small { font-size: 12px; }
+    .actions { display: flex; gap: 4px; }
   </style>
 </head>
 <body>
@@ -62,7 +315,7 @@
         <button class="tab-btn" role="tab" id="tab-split" aria-selected="false" aria-controls="panel-split">分割</button>
         <button class="tab-btn" role="tab" id="tab-raster" aria-selected="false" aria-controls="panel-raster">圖片化壓縮</button>
         <button class="tab-btn" role="tab" id="tab-struct" aria-selected="false" aria-controls="panel-struct">結構壓縮</button>
-        <button class="tab-btn" role="tab" id="tab-insert " aria-selected="false" aria-controls="panel-insert ">頁面插入</button>
+        <button class="tab-btn" role="tab" id="tab-insert" aria-selected="false" aria-controls="panel-insert">頁面插入</button>
         <button class="tab-btn" role="tab" id="tab-disclaim" aria-selected="false" aria-controls="panel-disclaim">聲明</button>
       </nav>
 
@@ -263,35 +516,47 @@
         </div>
       </section>
 
-      <section id="panel-insertt role="tabpanel" aria-labelledby="tab-insertt" hidden>
+      <section id="panel-insert" role="tabpanel" aria-labelledby="tab-insert" hidden>
         <div class="grid">
           <div>
-            <div class="drop" id="drop-insertt">
-              <div>拖放 1 個 PDF 或 <label for="insertt-input" class="btn">選擇檔案</label></div>
-              <input id="insertt-input" type="file" accept="application/pdf" hidden />
-              <div class="hint">僅限單一檔案。</div>
+            <!-- Main File -->
+            <label>1. 主檔案 (被插入的檔案)</label>
+            <div class="drop" id="drop-insert-main">
+              <div>拖放主 PDF 或 <label for="insert-input-main" class="btn">選擇檔案</label></div>
+              <input id="insert-input-main" type="file" accept="application/pdf" hidden />
+              <div id="insert-file-main-name" class="hint">尚未選擇</div>
             </div>
 
-            <label>分割頁碼範圍</label>
-            <input id="insertt-range" type="text" class="ranges" placeholder="例如：1-3,5;8-10；分號(;)分組輸出" />
+            <!-- Second File -->
+            <label style="margin-top:16px">2. 插入檔案 (要插入的頁面)</label>
+            <div class="drop" id="drop-insert-sub">
+              <div>拖放要插入的 PDF 或 <label for="insert-input-sub" class="btn">選擇檔案</label></div>
+              <input id="insert-input-sub" type="file" accept="application/pdf" hidden />
+              <div id="insert-file-sub-name" class="hint">尚未選擇</div>
+            </div>
 
-            <div class="row" style="margin-top:8px">
-              <label class="row" style="gap:6px"><input id="insertt-each" type="checkbox" /> 每頁一檔（忽略上方範圍）</label>
-              <label class="row" style="gap:6px"><input id="insertt-zip" type="checkbox" checked /> 以 ZIP 打包下載（建議）</label>
+            <!-- Position -->
+            <label style="margin-top:16px">插入位置</label>
+            <div class="row">
+                <select id="insert-pos-type">
+                    <option value="end">最末頁之後</option>
+                    <option value="start">最前頁之前 (第一頁)</option>
+                    <option value="after">指定頁碼之後...</option>
+                </select>
+                <input id="insert-page-num" type="number" min="1" placeholder="頁碼" style="width:80px; display:none" />
             </div>
 
             <div class="footer">
-              <button id="insertt-run" class="btn primary" disabled>分割並下載</button>
-              <span class="hint">輸出：多檔（建議以 ZIP 下載）</span>
+              <button id="insert-run" class="btn primary" disabled>合併插入並下載</button>
+              <span class="hint">輸出：<span class="kbd">主檔名-inserted.pdf</span></span>
             </div>
           </div>
           <aside>
             <div class="chips" style="margin-bottom:8px">
-              <span class="chip">頁碼區段分割</span>
-              <span class="chip">可每頁一檔</span>
-              <span class="chip">ZIP 批次下載</span>
+              <span class="chip">雙檔合併</span>
+              <span class="chip">指定位置</span>
             </div>
-            <div class="log" id="log-split" aria-live="polite"></div>
+            <div class="log" id="log-insert" aria-live="polite"></div>
           </aside>
         </div>
       </section>
@@ -308,8 +573,8 @@
 5) 使用者應自行承擔使用風險；作者不對任何損失、資料毀損或權利糾紛承擔責任。
 
 作者：黃瑋
-版本：v0.6.0
-最後更新：2025/09/20
+版本：v0.6.2
+最後更新：2026/01/29
           </div>
         </div>
       </section>
@@ -394,6 +659,7 @@
       {btn: $('#tab-split'), panel: $('#panel-split')},
       {btn: $('#tab-raster'), panel: $('#panel-raster')},
       {btn: $('#tab-struct'), panel: $('#panel-struct')},
+      {btn: $('#tab-insert'), panel: $('#panel-insert')},
       {btn: $('#tab-disclaim'), panel: $('#panel-disclaim')},
     ];
     tabs.forEach(({btn, panel})=>{
@@ -752,6 +1018,108 @@
       }catch(err){ console.error(err); log(structLog,'壓縮失敗：'+err.message,'err'); }
     }
     $('#struct-run').addEventListener('click', doStruct);
+
+    // =============================
+    // 頁面插入
+    // =============================
+    const insertInputMain = $('#insert-input-main');
+    const insertInputSub = $('#insert-input-sub');
+    const insertLog = $('#log-insert');
+    const insertPageNum = $('#insert-page-num');
+    const insertPosType = $('#insert-pos-type');
+    
+    let insertFileMain = null;
+    let insertFileSub = null;
+
+    function checkInsertReady(){
+        $('#insert-run').disabled = !(insertFileMain && insertFileSub);
+    }
+
+    function handleInsertFile(file, isMain){
+        if(isMain){
+            insertFileMain = file;
+            $('#insert-file-main-name').textContent = `已選擇：${file.name}`;
+            log(insertLog, `主檔案：${file.name}`, 'ok');
+        } else {
+            insertFileSub = file;
+            $('#insert-file-sub-name').textContent = `插入檔案：${file.name}`;
+            log(insertLog, `插入檔案：${file.name}`, 'ok');
+        }
+        checkInsertReady();
+    }
+
+    insertInputMain.addEventListener('change', e=>{
+        if(e.target.files[0]) handleInsertFile(e.target.files[0], true);
+        e.target.value = '';
+    });
+    insertInputSub.addEventListener('change', e=>{
+        if(e.target.files[0]) handleInsertFile(e.target.files[0], false);
+        e.target.value = '';
+    });
+
+    insertPosType.addEventListener('change', ()=>{
+        insertPageNum.style.display = insertPosType.value === 'after' ? 'block' : 'none';
+    });
+
+    // Simple Drop Helper
+    function setupDrop(elem, callback){
+         ['dragenter','dragover'].forEach(ev=> elem.addEventListener(ev, e=>{ e.preventDefault(); elem.dataset.active='true'; }));
+         ['dragleave','drop'].forEach(ev=> elem.addEventListener(ev, e=>{ 
+             e.preventDefault(); 
+             if(ev==='drop'){ 
+                 const f=(Array.from(e.dataTransfer.files||[]).filter(x=>x.type==='application/pdf'))[0]; 
+                 if(f) callback(f); 
+             } 
+             elem.dataset.active='false'; 
+         }));
+    }
+    
+    setupDrop($('#drop-insert-main'), f => handleInsertFile(f, true));
+    setupDrop($('#drop-insert-sub'), f => handleInsertFile(f, false));
+
+    async function doInsert(){
+        clearLog(insertLog);
+        if(!insertFileMain || !insertFileSub) return;
+        
+        try{
+            log(insertLog, '讀取檔案中...');
+            const mainBytes = await readAsArrayBuffer(insertFileMain);
+            const subBytes = await readAsArrayBuffer(insertFileSub);
+            
+            const mainDoc = await PDFDocument.load(mainBytes);
+            const subDoc = await PDFDocument.load(subBytes);
+            
+            const copiedPages = await mainDoc.copyPages(subDoc, subDoc.getPageIndices());
+            
+            let insertIndex = mainDoc.getPageCount(); // default end
+            const pos = insertPosType.value;
+            
+            if(pos === 'start'){
+                insertIndex = 0;
+            } else if(pos === 'after'){
+                let p = parseInt(insertPageNum.value, 10);
+                if(!Number.isFinite(p) || p < 1) p = 1; 
+                if(p > mainDoc.getPageCount()) p = mainDoc.getPageCount();
+                insertIndex = p;
+            }
+            
+            // Insert pages
+            for(let i=0; i<copiedPages.length; i++){
+                mainDoc.insertPage(insertIndex + i, copiedPages[i]);
+            }
+            
+            const outBytes = await mainDoc.save();
+            const outName = baseName(insertFileMain.name) + '-inserted.pdf';
+            downloadBlob(new Blob([outBytes], {type:'application/pdf'}), outName);
+            log(insertLog, `完成！已插入 ${copiedPages.length} 頁。`, 'ok');
+            
+        } catch(e){
+            console.error(e);
+            log(insertLog, '插入失敗：' + e.message, 'err');
+        }
+    }
+    
+    $('#insert-run').addEventListener('click', doInsert);
 
 </script>
 </body>
