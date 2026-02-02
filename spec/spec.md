@@ -1,9 +1,3 @@
-# Feature Specification: PDF Tool Specification
-
-**Feature Branch**: `001-pdf-tool-spec`  
-**Created**: 2025年12月17日  
-**Status**: Draft  
-**Input**: User description: "Follow instructions in [speckit.specify.prompt.md](file:///Users/huangwei/Project/pdf_tool/.github/prompts/speckit.specify.prompt.md).
 # PDF Tool 規格（Spec）
 
 ## 0. 文件資訊
