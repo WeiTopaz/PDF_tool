@@ -64,6 +64,6 @@
 
 ---
 
-**作者**：WeiTopaz  
+**作者**：Wei Topaz  
 **最後更新**：2026/02/02  
 **授權**：[MIT License](LICENSE)
